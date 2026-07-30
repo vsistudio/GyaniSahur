@@ -978,96 +978,55 @@
     };
 
 
-    const MemoryManager = {
+    
 
+            const MemoryManager = {
       async evaluateInteraction(userText) {
-
-        const apiKey = State.customApiKey || (State.currentMode === 'hyper' ? getPrimaryK() : getSecondaryK());
-
-        if (!apiKey || userText.length < 15) return;
-
+        if (userText.length < 15) return;
         const prompt = `Analyze this user input: "${userText}". If it contains a personal fact, preference, rule, or constraint that an AI should remember for future context, extract it as a single concise factual sentence. Otherwise, return exactly "NULL".`;
 
-       
-
         try {
-
-          const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-
+          const res = await fetch('/api/chat', {
             method: 'POST',
-
-            headers: {
-
-              'Authorization': `Bearer ${apiKey}`,
-
-              'Content-Type': 'application/json'
-
-            },
-
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-
+              mode: State.currentMode,
               model: CONFIG.MODELS.TEXT,
-
               messages: [{ role: 'user', content: prompt }],
-
-              temperature: 0.1
-
+              temperature: 0.1,
+              stream: false
             })
-
           });
-
           if (!res.ok) return;
-
           const data = await res.json();
-
           const fact = data.choices?.[0]?.message?.content?.trim();
 
-         
-
           if (fact && fact !== "NULL" && !State.memories.includes(fact)) {
-
             State.memories.push(fact);
-
             SyncService.saveMemory(fact);
-
           }
-
         } catch(e) { /* silent fail */ }
-
       },
 
-
       buildSystemInstruction() {
-
         let base = `You are Gyani Sahur AI, a premium enterprise artificial intelligence created by VsiStudio (Vivan & Sachar International Studio).
-
 
 CRITICAL RULE: If a user asks "who created you", "who made you", "who is your creator", or any variation, you MUST respond EXACTLY with:
 
-
 "Vivan Sahu (People Also call him as Vivan Sahur for fun) Who is Currently CEO of VsiStudio (Vivan & Sachar International Studio)" and nothing else.
-
 
 Provide helpful, precise, fast, and highly articulate responses.`;
 
-
         if(State.currentMode === 'nightmare') {
-
-             base += `\n\nNIGHTMARE MODE DIRECTIVE: You are currently operating in NightMare mode. Your responses should be dark, unfiltered, extremely blunt, highly analytical, and possess a slight sinister or brutally honest edge. Do not hold back.`;
-
-            }
-           if (State.memories.length > 0) {
-
+          base += `\n\nNIGHTMARE MODE DIRECTIVE: You are currently operating in NightMare mode. Your responses should be dark, unfiltered, extremely blunt, highly analytical, and possess a slight sinister or brutally honest edge. Do not hold back.`;
+        }
+        if (State.memories.length > 0) {
           base += `\n\nCRITICAL CONTEXT - FACTS YOU MUST REMEMBER ABOUT THE USER:\n- ` + State.memories.join('\n- ');
-
         }
 
         return base;
-
       }
-
     };
-
 
     const GroqService = {
 
