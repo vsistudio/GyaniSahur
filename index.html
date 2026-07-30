@@ -2019,3 +2019,266 @@ Provide helpful, precise, fast, and highly articulate responses.`;
         e.target.value = '';
 
       },
+       removeAttachment() {
+
+        State.pendingAttachmentBase64 = null;
+
+        document.getElementById('attachment-preview-container').classList.add('hidden');
+
+        this.autoResizeTextarea(document.getElementById('prompt-textarea'));
+
+      },
+
+
+      autoResizeTextarea(el) {
+
+        el.style.height = 'auto';
+
+        el.style.height = Math.min(el.scrollHeight, 200) + 'px';
+
+        const sBtn = document.getElementById('send-btn');
+
+        if (el.value.trim().length > 0 || State.pendingAttachmentBase64) {
+
+          sBtn.removeAttribute('disabled');
+
+          sBtn.className = 'w-10 h-10 flex items-center justify-center bg-brand-dark text-brand-gold rounded-full transition-all duration-300 transform hover:scale-105 active:scale-95 ml-1 shadow-md cursor-pointer';
+
+        } else {
+
+          sBtn.setAttribute('disabled', 'true');
+
+          sBtn.className = 'w-10 h-10 flex items-center justify-center bg-gray-200 text-gray-400 rounded-full transition-all duration-300 ml-1';
+
+        }
+
+      },
+
+
+      openSettings() {
+
+        document.getElementById('settings-modal').classList.remove('hidden');
+
+        document.getElementById('setting-voice').value = State.voice;
+
+        document.getElementById('setting-api-key').value = State.customApiKey;
+
+      },
+
+
+      saveSettings() {
+
+        State.voice = document.getElementById('setting-voice').value;
+
+        const inputKey = document.getElementById('setting-api-key').value.trim();
+
+        State.customApiKey = inputKey;
+
+       
+
+        localStorage.setItem('gyani_voice', State.voice);
+
+        if (inputKey) {
+
+          localStorage.setItem('gyani_api_key', inputKey);
+
+        } else {
+
+          localStorage.removeItem('gyani_api_key');
+
+        }
+
+       
+
+        document.getElementById('settings-modal').classList.add('hidden');
+
+        NotificationService.show('Preferences securely saved.', 'success');
+
+      }
+
+    };
+
+
+    window.selectModelMode = (mode) => {
+
+        State.currentMode = mode;
+
+        const badgeContainer = document.getElementById('current-badge');
+
+       
+
+        if(mode === 'hyper') {
+
+            badgeContainer.className = "bg-brand-gold/10 text-brand-goldDark text-[10px] px-2 py-0.5 rounded-full uppercase tracking-wider font-bold border border-brand-gold/20";
+
+            badgeContainer.innerHTML = '<i class="fa-solid fa-bolt mr-1"></i>Hyper';
+
+            NotificationService.show('Switched to Gyani Hyper Mode');
+
+        } else if (mode === 'nightmare') {
+
+            badgeContainer.className = "bg-black text-red-500 text-[10px] px-2 py-0.5 rounded-full uppercase tracking-wider font-bold border border-red-900 shadow-[0_0_10px_rgba(220,38,38,0.5)]";
+
+            badgeContainer.innerHTML = '<i class="fa-solid fa-skull mr-1"></i>NightMare';
+
+            NotificationService.show('NightMare Protocol Engaged', 'error');
+
+        }
+
+    };
+
+
+    window.onload = async () => {
+
+      UIController.init();
+
+      await SyncService.initialize();
+
+     
+
+      setTimeout(() => {
+
+        const loader = document.getElementById('loading-screen');
+
+        loader.style.opacity = '0';
+
+        setTimeout(() => {
+
+          loader.classList.add('hidden');
+
+          if(sessionStorage.getItem('gyani_pwd_verified') === 'true') {
+
+            UIController.proceedToAuth();
+
+          } else {
+
+            document.getElementById('password-gate-page').classList.remove('hidden');
+
+            setTimeout(() => document.getElementById('access-password').focus(), 100);
+
+          }
+
+        }, 700);
+
+      }, 2000);
+
+    };
+
+
+    window.verifyAccessPassword = () => UIController.verifyPassword();
+
+    window.handleGoogleSignIn = () => UIController.handleGoogleSignIn();
+
+    window.handleGuestSignIn = () => UIController.handleGuestSignIn();
+
+    window.signOutUser = () => UIController.signOutUser();
+
+    window.createNewChatSession = () => UIController.createNewSession();
+
+    window.handleDeleteSession = (e, id) => UIController.deleteSession(e, id);
+
+    window.clearCurrentChat = () => UIController.clearCurrentChat();
+
+    window.openSettingsModal = () => UIController.openSettings();
+
+    window.closeSettingsModal = () => document.getElementById('settings-modal').classList.add('hidden');
+
+    window.saveSettings = () => UIController.saveSettings();
+
+    window.removeAttachment = () => UIController.removeAttachment();
+
+    window.handleFileSelect = (e) => UIController.handleFile(e);
+
+    window.submitUserPrompt = () => UIController.submitPrompt();
+
+    window.autoResizeTextarea = (el) => UIController.autoResizeTextarea(el);
+
+
+    window.toggleMobileSidebar = () => {
+
+     document.getElementById('sidebar').classList.toggle('-translate-x-full');
+
+      document.getElementById('sidebar-overlay').classList.toggle('hidden');
+
+    };
+
+    window.toggleDesktopSidebar = () => document.getElementById('sidebar').classList.toggle('md:hidden');
+
+
+    window.usePresetPrompt = (text) => {
+
+      const ta = document.getElementById('prompt-textarea');
+
+      ta.value = text;
+
+      UIController.autoResizeTextarea(ta);
+
+      ta.focus();
+
+    };
+
+
+    window.handleKeyDown = (e, ctx) => {
+
+      if (e.key === 'Enter') {
+
+        if (ctx === 'auth') UIController.verifyPassword();
+
+        if (ctx === 'chat' && !e.shiftKey) { e.preventDefault(); UIController.submitPrompt(); }
+
+      }
+
+    };
+
+
+    window.toggleSpeechRecognition = () => {
+
+      if (State.isDictating) return;
+
+      State.isDictating = true;
+
+      document.getElementById('mic-btn').classList.add('text-red-500', 'animate-pulse');
+
+     
+
+      VoiceService.listen(
+
+        (txt) => {
+
+          const ta = document.getElementById('prompt-textarea');
+
+          ta.value = (ta.value + ' ' + txt).trim();
+
+          UIController.autoResizeTextarea(ta);
+
+          State.wasDictated = true;
+
+        },
+
+        () => {
+
+          State.isDictating = false;
+
+          document.getElementById('mic-btn').classList.remove('text-red-500', 'animate-pulse');
+
+        },
+
+        (err) => {
+
+          NotificationService.show(err, 'error');
+
+          State.isDictating = false;
+
+          document.getElementById('mic-btn').classList.remove('text-red-500', 'animate-pulse');
+
+        }
+
+      );
+
+    };
+
+  </script>
+
+</body>
+
+</html>
