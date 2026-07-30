@@ -603,3 +603,462 @@
     </main>
 
   </div>
+  <div id="settings-modal" class="hidden fixed inset-0 z-[60] bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 transition-opacity duration-300">
+
+    <div class="w-full max-w-md bg-white rounded-3xl shadow-2xl p-7 animate-slide-up border border-gray-100">
+
+      <div class="flex items-center justify-between pb-4 border-b border-gray-100 mb-5">
+
+        <h3 class="font-bold text-gray-900 text-lg flex items-center gap-2"><i class="fa-solid fa-sliders text-brand-gold"></i> Preferences</h3>
+
+        <button onclick="closeSettingsModal()" class="text-gray-400 hover:text-gray-700 w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 transition cursor-pointer"><i class="fa-solid fa-xmark text-lg"></i></button>
+
+      </div>
+
+
+      <div class="space-y-5">
+
+        <div>
+
+          <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Voice Identity</label>
+
+          <div class="relative">
+
+            <select id="setting-voice" class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-gray-800 text-sm focus:ring-2 focus:ring-brand-gold/50 focus:border-brand-gold outline-none appearance-none cursor-pointer transition">
+
+              <option value="Kore">Kore (Firm & Professional - Default)</option>
+
+              <option value="Zephyr">Zephyr (Bright & Articulate)</option>
+
+              <option value="Puck">Puck (Upbeat & Energetic)</option>
+
+              <option value="Charon">Charon (Informative & Deep)</option>
+
+              <option value="Aoede">Aoede (Breezy & Calm)</option>
+
+            </select>
+
+            <i class="fa-solid fa-chevron-down absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none text-xs"></i>
+
+          </div>
+
+        </div>
+
+
+        <div>
+
+          <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Groq API Key</label>
+
+          <input type="password" id="setting-api-key" placeholder="Using Groq Hyper Key" class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-gray-800 text-sm focus:ring-2 focus:ring-brand-gold/50 focus:border-brand-gold outline-none transition placeholder-green-600">
+
+          <p class="text-[10px] text-gray-400 mt-2 leading-relaxed">Leave empty to use default VsiStudio Groq key.</p>
+
+        </div>
+
+      </div>
+
+
+      <div class="mt-8 flex justify-end gap-3">
+
+        <button onclick="closeSettingsModal()" class="px-5 py-2.5 text-sm font-medium text-gray-600 hover:bg-gray-100 rounded-xl transition cursor-pointer">Cancel</button>
+
+        <button onclick="saveSettings()" class="px-5 py-2.5 text-sm font-bold text-white bg-brand-dark hover:bg-black rounded-xl transition shadow-md hover:shadow-lg flex items-center gap-2 cursor-pointer">Save Changes <i class="fa-solid fa-check text-xs"></i></button>
+
+      </div>
+
+    </div>
+
+  </div>
+
+
+  <script type="module">
+
+    // Obfuscated key construction to prevent simple scraping
+
+    const _k = [
+
+      "gsk_qJsjE7hDUf7rR",
+
+      "0yuokWbWGdyb3FYUc",
+
+      "3vmClfydbN2DRb7YXooHCk"
+
+    ];
+
+   
+
+    const _nk = [
+
+      "gsk_o0elW7MmARXZ",
+
+      "A4MV8MznWGdyb3FY",
+
+      "TKBqkx3x6F8IAsoC512YGxUx"
+
+    ];
+
+
+    const getPrimaryK = () => _k.join('');
+
+    const getSecondaryK = () => _nk.join('');
+
+
+    const CONFIG = {
+
+      APP_ID: 'vsistudio-gyani-pro',
+
+      MODELS: {
+
+        TEXT: 'llama-3.3-70b-versatile',
+
+        VISION: 'llama-3.2-11b-vision-preview'
+
+      },
+
+      FIREBASE: {
+
+        apiKey: "AIzaSyAKuiHjC_U4PvJ1xiTWojiTbmA6Wve0H3E",
+
+        authDomain: "gyani-sahur-afd35.firebaseapp.com",
+
+        projectId: "gyani-sahur-afd35",
+
+        storageBucket: "gyani-sahur-afd35.firebasestorage.app",
+
+        messagingSenderId: "303632590301",
+
+        appId: "1:303632590301:web:a39578d1df0c6804670234"
+
+      }
+
+    };
+    const State = {
+
+      sessions: [],
+
+      activeSessionId: null,
+
+      user: null,
+
+      isGuest: false,
+
+      currentMode: 'hyper', // hyper or nightmare
+
+      customApiKey: localStorage.getItem('gyani_api_key') || '',
+
+      voice: localStorage.getItem('gyani_voice') || 'Kore',
+
+      pendingAttachmentBase64: null,
+
+      isGenerating: false,
+
+      isDictating: false,
+
+      memories: [],
+
+      db: null,
+
+      auth: null
+
+    };
+
+
+    const Utils = {
+
+      generateId: () => 'id_' + Date.now().toString(36) + Math.random().toString(36).substr(2),
+
+      escapeHtml: (str) => (str || '').toString().replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' })[m]),
+
+      throttle: (func, limit) => {
+
+        let inThrottle;
+
+        return function(...args) {
+
+          if (!inThrottle) {
+
+            func.apply(this, args);
+
+            inThrottle = true;
+
+            setTimeout(() => inThrottle = false, limit);
+
+          }
+
+        };
+
+      }
+
+    };
+
+
+    const NotificationService = {
+
+      show(message, type = 'info') {
+
+        const container = document.getElementById('toast-container');
+
+        if(!container) return;
+
+        const toast = document.createElement('div');
+
+        let bgColor = type === 'error' ? 'bg-red-900' : (type === 'success' ? 'bg-green-900' : 'bg-gray-900');
+
+        let icon = type === 'error' ? '<i class="fa-solid fa-circle-exclamation text-red-400"></i>' :
+
+                  (type === 'success' ? '<i class="fa-solid fa-circle-check text-green-400"></i>' : '<i class="fa-solid fa-circle-info text-blue-400"></i>');
+
+       
+
+        toast.className = `flex items-center gap-3 px-4 py-3 rounded-xl shadow-2xl text-white text-sm font-medium ${bgColor} animate-slide-down border border-white/10`;
+
+        toast.innerHTML = `${icon} <span>${message}</span>`;
+
+        container.appendChild(toast);
+
+       
+
+        setTimeout(() => {
+
+          toast.style.opacity = '0';
+
+          toast.style.transform = 'translateY(-20px)';
+
+          toast.style.transition = 'all 0.4s ease';
+
+          setTimeout(() => toast.remove(), 400);
+
+        }, 4000);
+
+      }
+
+    };
+
+
+    const SyncService = {
+
+      async initialize() {
+
+        try {
+
+          const { initializeApp } = await import("https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js");
+
+          const { getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged } = await import("https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js");
+
+          const { getFirestore, doc, setDoc, getDocs, collection, deleteDoc } = await import("https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js");
+
+         
+
+          const app = initializeApp(CONFIG.FIREBASE);
+
+          State.auth = getAuth(app);
+
+          State.db = getFirestore(app);
+
+         
+
+          this.fs = { doc, setDoc, getDocs, collection, deleteDoc, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged };
+
+         
+
+          this.fs.onAuthStateChanged(State.auth, async (user) => {
+
+            if (user) {
+
+              State.user = user;
+
+              await this.loadCloudData();
+
+              UIController.unlockWorkspace();
+
+            }
+
+          });
+
+          return true;
+
+        } catch(e) {
+
+          console.warn("Firebase Dynamic Import failed. Running in local mode.");
+
+          return false;
+
+        }
+
+      },
+
+          async loadCloudData() {
+
+        if (!State.user || !State.db) return;
+
+        try {
+
+          const sessionsRef = this.fs.collection(State.db, 'artifacts', CONFIG.APP_ID, 'users', State.user.uid, 'sessions');
+
+          const snaps = await this.fs.getDocs(sessionsRef);
+
+          let loaded = [];
+
+          snaps.forEach(d => loaded.push(d.data()));
+
+          if(loaded.length > 0) {
+
+            State.sessions = loaded.sort((a,b) => b.updatedAt - a.updatedAt);
+
+            State.activeSessionId = State.sessions[0].id;
+
+          }
+
+
+          const memRef = this.fs.collection(State.db, 'artifacts', CONFIG.APP_ID, 'users', State.user.uid, 'memories');
+
+          const memSnaps = await this.fs.getDocs(memRef);
+
+          State.memories = [];
+
+          memSnaps.forEach(d => State.memories.push(d.data().fact));
+
+        } catch(e) { console.error("Cloud data fetch error", e); }
+
+      },
+
+
+      async saveSession(session) {
+
+        if (State.isGuest || !State.user || !State.db) {
+
+          localStorage.setItem('gyani_sessions', JSON.stringify(State.sessions));
+
+          return;
+
+        }
+
+        try {
+
+          const docRef = this.fs.doc(State.db, 'artifacts', CONFIG.APP_ID, 'users', State.user.uid, 'sessions', session.id);
+
+          await this.fs.setDoc(docRef, session);
+
+        } catch(e) { localStorage.setItem('gyani_sessions', JSON.stringify(State.sessions)); }
+
+      },
+
+
+      async deleteSession(id) {
+
+        if (State.isGuest || !State.user || !State.db) return;
+
+        try {
+
+          const docRef = this.fs.doc(State.db, 'artifacts', CONFIG.APP_ID, 'users', State.user.uid, 'sessions', id);
+
+          await this.fs.deleteDoc(docRef);
+
+        } catch(e) {}
+
+      },
+
+
+      async saveMemory(fact) {
+
+        if (State.isGuest || !State.user || !State.db) {
+
+          localStorage.setItem('gyani_memories', JSON.stringify(State.memories));
+
+          return;
+
+        }
+
+        try {
+
+          const mId = 'mem_' + Date.now();
+
+          const docRef = this.fs.doc(State.db, 'artifacts', CONFIG.APP_ID, 'users', State.user.uid, 'memories', mId);
+
+          await this.fs.setDoc(docRef, { fact, timestamp: Date.now() });
+
+        } catch(e) {}
+
+      }
+
+    };
+
+
+    const MemoryManager = {
+
+      async evaluateInteraction(userText) {
+
+        const apiKey = State.customApiKey || (State.currentMode === 'hyper' ? getPrimaryK() : getSecondaryK());
+
+        if (!apiKey || userText.length < 15) return;
+
+        const prompt = `Analyze this user input: "${userText}". If it contains a personal fact, preference, rule, or constraint that an AI should remember for future context, extract it as a single concise factual sentence. Otherwise, return exactly "NULL".`;
+
+       
+
+        try {
+
+          const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+
+            method: 'POST',
+
+            headers: {
+
+              'Authorization': `Bearer ${apiKey}`,
+
+              'Content-Type': 'application/json'
+
+            },
+
+            body: JSON.stringify({
+
+              model: CONFIG.MODELS.TEXT,
+
+              messages: [{ role: 'user', content: prompt }],
+
+              temperature: 0.1
+
+            })
+
+          });
+
+          if (!res.ok) return;
+
+          const data = await res.json();
+
+          const fact = data.choices?.[0]?.message?.content?.trim();
+
+         
+
+          if (fact && fact !== "NULL" && !State.memories.includes(fact)) {
+
+            State.memories.push(fact);
+
+            SyncService.saveMemory(fact);
+
+          }
+
+        } catch(e) { /* silent fail */ }
+
+      },
+
+
+      buildSystemInstruction() {
+
+        let base = `You are Gyani Sahur AI, a premium enterprise artificial intelligence created by VsiStudio (Vivan & Sachar International Studio).
+
+
+CRITICAL RULE: If a user asks "who created you", "who made you", "who is your creator", or any variation, you MUST respond EXACTLY with:
+
+
+"Vivan Sahu (People Also call him as Vivan Sahur for fun) Who is Currently CEO of VsiStudio (Vivan & Sachar International Studio)" and nothing else.
+
+
+Provide helpful, precise, fast, and highly articulate responses.`;
+
+
+        if(State.currentMode === 'nightmare') {
+
+             base += `\n\nNIGHTMARE MODE DIRECTIVE: You are currently operating in NightMare mode. Your responses should be dark, unfiltered, extremely blunt, highly analytical, and possess a slight sinister or brutally honest edge. Do not hold back.`;
+
+            }
