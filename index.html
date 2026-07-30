@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+
+  <meta charset="UTF-8">
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+  <title>Gyani Sahur AI | Premium Hyper Edition by VsiStudio</title>
+
+
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+
+
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/atom-one-dark.min.css">
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.5/purify.min.js"></script>
+
+
+  <script>
+
+    tailwind.config = {
+
+      theme: {
+
+        extend: {
+
+          fontFamily: {
+
+            sans: ['Inter', 'sans-serif'],
+
+            mono: ['"JetBrains Mono"', 'monospace'],
+
+          },
+
+          colors: {
+
+            brand: {
+
+              gold: '#D4AF37',      
+
+              goldHover: '#F3E5AB',  
+
+              goldDark: '#AA8C2C',  
+
+              dark: '#0A0A0A',      
+
+              graybg: '#F9FAFB',
+
+              sidebar: '#111111',    
+
+              surface: '#1A1A1A'    
+
+            }
+
+          },
+
+          animation: {
+
+            'fade-in': 'fadeIn 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards',
+
+            'slide-up': 'slideUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards',
+
+            'slide-down': 'slideDown 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards',
+
+            'spin-slow': 'spin 4s linear infinite',
+
+            'pulse-gold': 'pulseGold 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+
+            'float': 'float 6s ease-in-out infinite',
+
+            'slide-in-right': 'slideInRight 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards',
+
+          },
+
+          keyframes: {
+
+            fadeIn: { '0%': { opacity: '0' }, '100%': { opacity: '1' } },
+
+            slideUp: { '0%': { opacity: '0', transform: 'translateY(20px)' }, '100%': { opacity: '1', transform: 'translateY(0)' } },
+
+            slideDown: { '0%': { opacity: '0', transform: 'translateY(-20px)' }, '100%': { opacity: '1', transform: 'translateY(0)' } },
+
+            slideInRight: { '0%': { opacity: '0', transform: 'translateX(20px)' }, '100%': { opacity: '1', transform: 'translateX(0)' } },
+
+            pulseGold: {
+
+              '0%, 100%': { opacity: '1', filter: 'drop-shadow(0 0 8px rgba(212, 175, 55, 0.4))' },
+
+              '50%': { opacity: '.7', filter: 'drop-shadow(0 0 15px rgba(212, 175, 55, 0.8))' },
+
+            },
+
+            float: {
+
+              '0%, 100%': { transform: 'translateY(0)' },
+
+              '50%': { transform: 'translateY(-10px)' },
+
+            }
+
+          }
+
+        }
+
+      }
+
+    }
+
+  </script>
+
+
+  <style>
+
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+
+    ::-webkit-scrollbar-track { background: transparent; }
+
+    ::-webkit-scrollbar-thumb { background: #e5e5e5; border-radius: 10px; }
+
+    ::-webkit-scrollbar-thumb:hover { background: #d4d4d4; }
+
+    #sidebar ::-webkit-scrollbar-thumb { background: #333; }
+
+    #sidebar ::-webkit-scrollbar-thumb:hover { background: #555; }
+
+   
+
+    body { background-color: #ffffff; color: #0A0A0A; -webkit-font-smoothing: antialiased; overflow: hidden; }
+
+   
+
+    .prose h1, .prose h2, .prose h3, .prose h4 { font-weight: 700; color: #0A0A0A; margin-top: 1.5em; margin-bottom: 0.5em; letter-spacing: -0.02em; }
+
+    .prose p { margin-bottom: 1.2em; line-height: 1.7; color: #374151; }
+
+    .prose a { color: #D4AF37; text-decoration: none; font-weight: 500; transition: color 0.2s; }
+
+    .prose a:hover { color: #AA8C2C; }
+
+    .prose ul { list-style-type: disc; padding-left: 1.5em; margin-bottom: 1.2em; color: #374151; }
+
+    .prose ol { list-style-type: decimal; padding-left: 1.5em; margin-bottom: 1.2em; color: #374151; }
+
+    .prose strong { font-weight: 600; color: #111827; }
+
+    .prose blockquote { border-left: 4px solid #D4AF37; padding-left: 1.2em; color: #4B5563; font-style: italic; background: #F9FAFB; padding-top: 0.5em; padding-bottom: 0.5em; border-radius: 0 0.5rem 0.5rem 0; }
+
+   
+
+    .prose pre { background-color: #1A1A1A !important; color: #E5E7EB !important; padding: 1.25rem; border-radius: 0.75rem; overflow-x: auto; margin: 1.5em 0; font-size: 0.875rem; border: 1px solid #333; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
+
+    .prose code:not(pre code) { background-color: #F3F4F6; color: #B91C1C; padding: 0.2em 0.4em; border-radius: 0.375rem; font-size: 0.875em; font-family: 'JetBrains Mono', monospace; }
+
+   
+
+    textarea { -ms-overflow-style: none; scrollbar-width: none; }
+
+    textarea::-webkit-scrollbar { display: none; }
+
+   
+
+    .gold-gradient-text { background: linear-gradient(135deg, #D4AF37 0%, #F3E5AB 50%, #AA8C2C 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+
+    .gold-gradient-bg { background: linear-gradient(135deg, #D4AF37 0%, #F3E5AB 50%, #AA8C2C 100%); }
+
+    .glass { background: rgba(255, 255, 255, 0.8); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border-top: 1px solid rgba(255, 255, 255, 0.3); }
+
+    .glass-dark { background: rgba(17, 17, 17, 0.85); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border-bottom: 1px solid rgba(255,255,255,0.05); }
+
+    .page-exit { opacity: 0; transform: scale(0.98); transition: all 0.4s ease; pointer-events: none; }
+
+    #toast-container { z-index: 9999; }
+
+   
+
+    /* Model Selector Dropdown */
+
+    .model-dropdown-content { display: none; position: absolute; top: 100%; left: 0; min-w-full; background-color: #ffffff; min-width: 160px; box-shadow: 0 8px 16px 0 rgba(0,0,0,0.1); border-radius: 0.75rem; border: 1px solid #f3f4f6; z-index: 50; overflow: hidden; margin-top: 0.5rem; }
+
+    .model-selector-group:hover .model-dropdown-content { display: block; animation: slideUp 0.2s ease-out forwards; }
+
+    .model-option { padding: 0.75rem 1rem; cursor: pointer; transition: background-color 0.2s; border-bottom: 1px solid #f9fafb; display: flex; align-items: center; justify-content: space-between;}
+
+    .model-option:hover { background-color: #f9fafb; }
+
+    .model-option:last-child { border-bottom: none; }
+
+
+    @keyframes scaleX { 0% { transform: scaleX(0); transform-origin: left; } 50% { transform: scaleX(1); transform-origin: left; } 51% { transform: scaleX(1); transform-origin: right; } 100% { transform: scaleX(0); transform-origin: right; } }
+
+  </style>
+
+</head>
+
+<body class="flex flex-col h-screen overflow-hidden selection:bg-brand-goldHover selection:text-brand-dark relative">
+
+  <div id="toast-container" class="fixed top-4 left-1/2 -translate-x-1/2 flex flex-col gap-2 pointer-events-none"></div>
+
+
+  <svg class="hidden">
+
+    <defs>
+
+      <linearGradient id="goldGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+
+        <stop offset="0%" stop-color="#D4AF37" />
+
+        <stop offset="50%" stop-color="#F3E5AB" />
+
+        <stop offset="100%" stop-color="#AA8C2C" />
+
+      </linearGradient>
+
+      <g id="vsi-logo-symbol">
+
+        <circle cx="50" cy="50" r="45" fill="none" stroke="url(#goldGradient)" stroke-width="4" opacity="0.8"/>
+
+        <path d="M30 35 L50 70 L70 35" fill="none" stroke="url(#goldGradient)" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+
+        <path d="M65 30 C 65 20, 35 20, 35 30 C 35 45, 65 55, 65 70 C 65 80, 35 80, 35 70" fill="none" stroke="#FFFFFF" stroke-width="5" stroke-linecap="round" opacity="0.9" style="mix-blend-mode: overlay;"/>
+
+        <path d="M65 30 C 65 20, 35 20, 35 30 C 35 45, 65 55, 65 70 C 65 80, 35 80, 35 70" fill="none" stroke="url(#goldGradient)" stroke-width="2" stroke-linecap="round"/>
+
+      </g>
+
+    </defs>
+
+  </svg>
