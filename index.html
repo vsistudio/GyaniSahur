@@ -240,3 +240,82 @@
     </defs>
 
   </svg>
+  <div id="loading-screen" class="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-brand-dark transition-opacity duration-700 ease-out">
+
+    <div class="animate-float flex flex-col items-center">
+
+      <svg class="w-24 h-24 mb-6 animate-pulse-gold drop-shadow-2xl" viewBox="0 0 100 100"><use href="#vsi-logo-symbol"></use></svg>
+
+      <h1 class="text-white text-2xl font-bold tracking-widest uppercase opacity-90"><span class="gold-gradient-text">Gyani</span> Sahur</h1>
+
+      <p class="text-brand-gold mt-2 text-sm tracking-widest font-mono uppercase opacity-70">By VsiStudio</p>
+
+      <div class="w-48 h-1 bg-gray-800 rounded-full mt-8 overflow-hidden">
+
+        <div class="h-full bg-brand-gold w-full origin-left animate-[scaleX_1.5s_ease-in-out_infinite]"></div>
+
+      </div>
+
+    </div>
+
+  </div>
+
+
+  <div id="password-gate-page" class="hidden fixed inset-0 z-[60] flex items-center justify-center bg-gray-50 transition-all duration-500">
+
+    <div class="absolute inset-0 overflow-hidden pointer-events-none">
+
+      <div class="absolute -top-[20%] -right-[10%] w-[70%] h-[70%] rounded-full bg-brand-gold opacity-5 blur-[120px]"></div>
+
+      <div class="absolute -bottom-[20%] -left-[10%] w-[60%] h-[60%] rounded-full bg-gray-400 opacity-10 blur-[100px]"></div>
+
+    </div>
+
+    <div class="w-full max-w-[500px] p-8 sm:p-10 bg-white/80 backdrop-blur-xl rounded-3xl shadow-[0_20px_60px_-15px_rgba(0,0,0,0.1)] border border-white/50 flex flex-col items-center animate-slide-up relative z-10 text-center mx-4">
+
+      <div class="mb-4 relative flex items-center justify-center">
+
+        <div class="absolute inset-0 bg-brand-gold blur-2xl opacity-20 rounded-full"></div>
+
+        <svg class="w-16 h-16 relative z-10" viewBox="0 0 100 100"><use href="#vsi-logo-symbol"></use></svg>
+
+      </div>
+
+      <h1 class="text-xl font-bold tracking-tight text-brand-dark mb-4 gold-gradient-text leading-snug">Gyani Sahur is a Private AI for VsiStudio.</h1>
+
+      <p class="text-gray-600 text-sm mb-8 px-2 leading-relaxed font-medium">Only Employees of VsiStudio or special members have access to this AI.<br>Please enter the password to verify your access.</p>
+
+      <div class="w-full flex flex-col gap-4">
+
+        <input type="password" id="access-password" placeholder="Enter Access Password" class="w-full px-5 py-4 bg-gray-50 border border-gray-200 rounded-xl text-gray-800 text-sm focus:ring-2 focus:ring-brand-gold/50 focus:border-brand-gold outline-none transition text-center tracking-widest shadow-inner" onkeydown="handleKeyDown(event, 'auth')">
+
+        <button onclick="verifyAccessPassword()" class="w-full py-4 px-6 bg-brand-dark hover:bg-black text-brand-gold hover:text-brand-goldHover font-bold rounded-xl transition duration-200 shadow-md hover:shadow-lg flex items-center justify-center gap-2 group uppercase tracking-widest text-xs cursor-pointer">
+
+          <span>Verify Access</span><i class="fa-solid fa-lock-open text-sm group-hover:scale-110 transition-transform"></i>
+
+        </button>
+
+      </div>
+
+      <div id="password-error" class="hidden mt-4 w-full text-xs text-red-600 font-medium bg-red-50 border border-red-100 rounded-lg p-3 text-center animate-fade-in">Incorrect Access Password. Access Denied.</div>
+
+      <p class="mt-6 text-[10px] text-gray-400 uppercase tracking-widest">Hint: Try 'Better LuckNextTime'</p>
+
+    </div>
+
+  </div>
+
+
+  <div id="security-page" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-gray-50 transition-all duration-500">
+
+    <div class="absolute inset-0 overflow-hidden pointer-events-none">
+
+      <div class="absolute -top-[20%] -right-[10%] w-[70%] h-[70%] rounded-full bg-brand-gold opacity-5 blur-[120px]"></div>
+
+      <div class="absolute -bottom-[20%] -left-[10%] w-[60%] h-[60%] rounded-full bg-gray-400 opacity-10 blur-[100px]"></div>
+
+    </div>
+
+    <div class="w-full max-w-md p-8 sm:p-10 bg-white/80 backdrop-blur-xl rounded-3xl shadow-[0_20px_60px_-15px_rgba(0,0,0,0.1)] border border-white/50 flex flex-col items-center animate-slide-up relative z-10 mx-4">
+
+      <div class="mb-6 relative flex items-center justify-center">
