@@ -1062,3 +1062,553 @@ Provide helpful, precise, fast, and highly articulate responses.`;
              base += `\n\nNIGHTMARE MODE DIRECTIVE: You are currently operating in NightMare mode. Your responses should be dark, unfiltered, extremely blunt, highly analytical, and possess a slight sinister or brutally honest edge. Do not hold back.`;
 
             }
+           if (State.memories.length > 0) {
+
+          base += `\n\nCRITICAL CONTEXT - FACTS YOU MUST REMEMBER ABOUT THE USER:\n- ` + State.memories.join('\n- ');
+
+        }
+
+        return base;
+
+      }
+
+    };
+
+
+    const GroqService = {
+
+      async streamResponse(promptText, history, attachment, systemInstruction, onChunk) {
+
+        const apiKey = State.customApiKey || (State.currentMode === 'hyper' ? getPrimaryK() : getSecondaryK());
+
+        if (!apiKey) throw new Error("API Key required. Please configure an API Key in Settings.");
+
+
+        const messages = [];
+
+        if (systemInstruction) {
+
+          messages.push({ role: 'system', content: systemInstruction });
+
+        }
+
+
+        history.forEach(m => {
+
+          const role = m.role === 'model' ? 'assistant' : 'user';
+
+          if (m.attachment) {
+
+            messages.push({
+
+              role: role,
+
+              content: [
+
+                { type: 'text', text: m.text || '' },
+
+                { type: 'image_url', image_url: { url: m.attachment } }
+
+              ]
+
+            });
+
+          } else {
+
+            messages.push({ role: role, content: m.text || '' });
+
+          }
+
+        });
+
+
+        if (attachment) {
+
+          messages.push({
+
+            role: 'user',
+
+            content: [
+
+              { type: 'text', text: promptText || '' },
+
+              { type: 'image_url', image_url: { url: attachment } }
+
+            ]
+
+          });
+
+        } else if (promptText) {
+
+          messages.push({ role: 'user', content: promptText });
+
+        }
+
+
+        const modelName = attachment ? CONFIG.MODELS.VISION : CONFIG.MODELS.TEXT;
+
+
+        const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+
+          method: 'POST',
+
+          headers: {
+
+            'Authorization': `Bearer ${apiKey}`,
+
+            'Content-Type': 'application/json'
+
+          },
+
+          body: JSON.stringify({
+
+            model: modelName,
+
+            messages: messages,
+
+            stream: true,
+
+            temperature: 0.7
+
+          })
+
+        });
+
+
+        if (!response.ok) {
+
+          let errorDetails = `HTTP ${response.status}`;
+
+          try {
+
+            const errJson = await response.json();
+
+            if (errJson.error && errJson.error.message) {
+
+              errorDetails = errJson.error.message;
+
+            }
+
+          } catch(e) {}
+
+          throw new Error(errorDetails);
+
+        }
+
+
+        const reader = response.body.getReader();
+
+        const decoder = new TextDecoder("utf-8");
+
+        let fullResponse = '';
+
+        let buffer = '';
+
+
+        while (true) {
+
+          const { done, value } = await reader.read();
+
+          if (done) break;
+
+
+          buffer += decoder.decode(value, { stream: true });
+
+          const lines = buffer.split('\n');
+
+          buffer = lines.pop() || '';
+
+
+          for (const line of lines) {
+
+            const trimmed = line.trim();
+
+            if (trimmed.startsWith('data:')) {
+
+              const jsonStr = trimmed.substring(5).trim();
+
+              if (jsonStr === '[DONE]') break;
+
+              if (!jsonStr) continue;
+
+              try {
+
+                const parsed = JSON.parse(jsonStr);
+
+                const chunkText = parsed.choices?.[0]?.delta?.content;
+
+                if (chunkText) {
+
+                  fullResponse += chunkText;
+
+                  onChunk(fullResponse);
+
+                }
+
+              } catch (err) {}
+
+            }
+
+          }
+
+    }
+          if (buffer.trim().startsWith('data:')) {
+
+          const jsonStr = buffer.trim().substring(5).trim();
+
+          if (jsonStr && jsonStr !== '[DONE]') {
+
+            try {
+
+              const parsed = JSON.parse(jsonStr);
+
+              const chunkText = parsed.choices?.[0]?.delta?.content;
+
+              if (chunkText) {
+
+                fullResponse += chunkText;
+
+                onChunk(fullResponse);
+
+              }
+
+            } catch (err) {}
+
+          }
+
+        }
+
+
+        return fullResponse;
+
+      }
+
+    };
+
+
+    const VoiceService = {
+
+      speak(text) {
+
+        if(!window.speechSynthesis) return;
+
+        window.speechSynthesis.cancel();
+
+       
+
+        const cleanText = text.replace(/[*#`_]/g, '').replace(/\[([^\]]+)\]\([^\)]+\)/g, '$1');
+
+        const utterance = new SpeechSynthesisUtterance(cleanText);
+
+       
+
+        switch(State.voice) {
+
+          case 'Kore': utterance.pitch = 0.9; utterance.rate = 1.0; break;
+
+          case 'Zephyr': utterance.pitch = 1.2; utterance.rate = 1.1; break;
+
+          case 'Puck': utterance.pitch = 1.4; utterance.rate = 1.2; break;
+
+          case 'Charon': utterance.pitch = 0.6; utterance.rate = 0.9; break;
+
+          case 'Aoede': utterance.pitch = 1.0; utterance.rate = 0.85; break;
+
+        }
+
+        window.speechSynthesis.speak(utterance);
+
+      },
+
+
+      listen(onResult, onEnd, onError) {
+
+        const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+
+        if (!SR) {
+
+           onError("Speech recognition not supported in this browser.");
+
+           return null;
+
+        }
+
+        const recognition = new SR();
+
+        recognition.continuous = false;
+
+        recognition.interimResults = true;
+
+        recognition.onresult = (e) => {
+
+          let transcript = '';
+
+          for (let i = e.resultIndex; i < e.results.length; ++i) {
+
+             if (e.results[i].isFinal) transcript += e.results[i][0].transcript;
+
+          }
+
+          if(transcript) onResult(transcript);
+
+        };
+
+        recognition.onerror = () => onError("Microphone error or permission denied.");
+
+        recognition.onend = onEnd;
+
+        recognition.start();
+
+        return recognition;
+
+      }
+
+    };
+
+
+    const FormatService = {
+
+      init() {
+
+        if(window.marked) {
+
+          window.marked.setOptions({
+
+            highlight: (code, lang) => lang && window.hljs.getLanguage(lang) ? window.hljs.highlight(code, { language: lang }).value : window.hljs.highlightAuto(code).value,
+
+            breaks: true,
+
+            gfm: true
+
+          });
+
+        }
+
+      },
+
+      render(rawText) {
+
+        if(!window.marked || !window.DOMPurify) return Utils.escapeHtml(rawText);
+
+        let html = window.DOMPurify.sanitize(window.marked.parse(rawText));
+
+       
+
+        const div = document.createElement('div');
+
+        div.innerHTML = html;
+
+       
+
+        div.querySelectorAll('table').forEach(table => {
+
+          table.className = 'min-w-full divide-y divide-gray-200 border border-gray-200 rounded-lg overflow-hidden my-4 shadow-sm';
+
+          table.querySelectorAll('th').forEach(th => th.className = 'bg-gray-50 px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider');
+
+          table.querySelectorAll('td').forEach(td => td.className = 'px-4 py-3 whitespace-nowrap text-sm text-gray-900 border-t border-gray-100');
+
+        });
+
+       
+
+        div.querySelectorAll('pre').forEach(pre => {
+
+          const wrapper = document.createElement('div');
+
+          wrapper.className = 'relative group bg-[#1A1A1A] rounded-xl overflow-hidden my-4 border border-gray-800 shadow-lg';
+
+         
+
+          const header = document.createElement('div');
+
+          header.className = 'flex items-center justify-between px-4 py-2 bg-[#2A2A2A] text-gray-400 text-xs font-mono border-b border-gray-800';
+
+          header.innerHTML = `<span>Terminal</span><button class="copy-btn hover:text-brand-gold transition flex items-center gap-1 cursor-pointer"><i class="fa-regular fa-copy"></i> Copy</button>`;
+
+         
+
+          pre.parentNode.insertBefore(wrapper, pre);
+
+          wrapper.appendChild(header);
+
+          wrapper.appendChild(pre);
+
+          pre.className = 'p-4 overflow-x-auto text-sm';
+
+        });
+        return div.innerHTML;
+
+      }
+
+    };
+
+
+    const UIController = {
+
+      init() {
+
+        FormatService.init();
+
+       
+
+        const localS = localStorage.getItem('gyani_sessions');
+
+        if (localS) {
+
+          try { State.sessions = JSON.parse(localS); } catch(e){}
+
+          if(State.sessions.length > 0) State.activeSessionId = State.sessions[0].id;
+
+        }
+
+       
+
+        const localM = localStorage.getItem('gyani_memories');
+
+        if (localM) {
+
+          try { State.memories = JSON.parse(localM); } catch(e){}
+
+        }
+
+
+        document.getElementById('messages-container').addEventListener('click', (e) => {
+
+          if (e.target.closest('.copy-btn')) {
+
+            const btn = e.target.closest('.copy-btn');
+
+            const wrapper = btn.closest('.relative');
+
+            const code = wrapper.querySelector('code').innerText;
+
+            navigator.clipboard.writeText(code);
+
+            btn.innerHTML = `<i class="fa-solid fa-check text-green-500"></i> Copied`;
+
+            setTimeout(() => btn.innerHTML = `<i class="fa-regular fa-copy"></i> Copy`, 2000);
+
+          }
+
+        });
+
+      },
+
+
+      verifyPassword() {
+
+        const val = document.getElementById('access-password').value.trim();
+
+        if(val === 'JaiSiyaram[(OnlyVsi)]') {
+
+          document.getElementById('password-error').classList.add('hidden');
+
+          sessionStorage.setItem('gyani_pwd_verified', 'true');
+
+          document.getElementById('password-gate-page').classList.add('page-exit');
+
+          setTimeout(() => {
+
+            document.getElementById('password-gate-page').classList.add('hidden');
+
+            this.proceedToAuth();
+
+          }, 400);
+
+        } else {
+
+          document.getElementById('password-error').classList.remove('hidden');
+
+          NotificationService.show("Incorrect Password.", "error");
+
+        }
+
+      },
+
+
+      proceedToAuth() {
+
+        if(sessionStorage.getItem('gyani_auth_guest') === 'true') {
+
+           this.handleGuestSignIn();
+
+        } else {
+
+           document.getElementById('security-page').classList.remove('hidden');
+
+        }
+
+      },
+
+
+      handleGuestSignIn() {
+
+        sessionStorage.setItem('gyani_auth_guest', 'true');
+
+        State.isGuest = true;
+
+        State.user = { uid: 'guest_' + Date.now(), displayName: 'Guest User', email: 'Local Session' };
+
+        this.unlockWorkspace();
+
+      },
+
+
+      async handleGoogleSignIn() {
+
+        if(!SyncService.fs) {
+
+           NotificationService.show("Firebase not loaded. Please use Guest mode.", "error");
+
+           return;
+
+        }
+
+        try {
+
+          const provider = new SyncService.fs.GoogleAuthProvider();
+
+          await SyncService.fs.signInWithPopup(State.auth, provider);
+
+        } catch(e) {
+
+          NotificationService.show("Authentication failed: " + e.message, "error");
+
+        }
+
+      },
+
+
+      async signOutUser() {
+
+        if(State.auth && SyncService.fs) {
+
+          try { await SyncService.fs.signOut(State.auth); } catch(e){}
+
+        }
+
+        sessionStorage.removeItem('gyani_auth_guest');
+
+        sessionStorage.removeItem('gyani_pwd_verified');
+
+        location.reload();
+
+      },
+
+
+      unlockWorkspace() {
+
+        document.getElementById('user-name-display').textContent = State.user.displayName || 'Guest User';
+
+        document.getElementById('user-email-display').textContent = State.user.email || 'Local Session';
+
+       
+
+        let initials = "GS";
+
+        if(State.user.displayName) {
+
+          initials = State.user.displayName.split(' ').map(n=>n[0]).join('').substring(0,2).toUpperCase();
+
+    }
