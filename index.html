@@ -1612,3 +1612,410 @@ Provide helpful, precise, fast, and highly articulate responses.`;
           initials = State.user.displayName.split(' ').map(n=>n[0]).join('').substring(0,2).toUpperCase();
 
     }
+        document.getElementById('user-avatar').textContent = initials;
+
+       
+
+        document.getElementById('security-page').classList.add('page-exit');
+
+        setTimeout(() => {
+
+          document.getElementById('security-page').classList.add('hidden');
+
+          document.getElementById('app-workspace').classList.remove('hidden');
+
+         
+
+          if(!State.activeSessionId || State.sessions.length === 0) {
+
+            this.createNewSession();
+
+          } else {
+
+            this.renderSessionsList();
+
+            this.renderMessages();
+
+          }
+
+        }, 400);
+
+      },
+
+
+      createNewSession() {
+
+        const s = { id: Utils.generateId(), title: 'New Workspace', createdAt: Date.now(), updatedAt: Date.now(), messages: [] };
+
+        State.sessions.unshift(s);
+
+        State.activeSessionId = s.id;
+
+        SyncService.saveSession(s);
+
+        this.renderSessionsList();
+
+        this.renderMessages();
+
+        if(window.innerWidth < 768) document.getElementById('sidebar').classList.add('-translate-x-full');
+
+        document.getElementById('sidebar-overlay').classList.add('hidden');
+
+      },
+
+
+      deleteSession(e, id) {
+
+        e.stopPropagation();
+
+        State.sessions = State.sessions.filter(s => s.id !== id);
+
+        SyncService.deleteSession(id);
+
+       
+
+        if (State.activeSessionId === id) {
+
+          State.activeSessionId = State.sessions.length > 0 ? State.sessions[0].id : null;
+
+        }
+
+        if (!State.activeSessionId) this.createNewSession();
+
+        else {
+
+          this.renderSessionsList();
+
+          this.renderMessages();
+
+        }
+
+      },
+
+
+      clearCurrentChat() {
+
+        const s = State.sessions.find(x => x.id === State.activeSessionId);
+
+        if(s) {
+
+          s.messages = [];
+
+          s.updatedAt = Date.now();
+
+          SyncService.saveSession(s);
+
+          this.renderMessages();
+
+          NotificationService.show('Chat history cleared.');
+
+        }
+
+      },
+
+
+      renderSessionsList() {
+
+        const listEl = document.getElementById('chat-sessions-list');
+
+        listEl.innerHTML = '';
+
+        State.sessions.forEach(s => {
+
+          const isActive = s.id === State.activeSessionId;
+
+          const item = document.createElement('div');
+
+          item.className = `group flex items-center justify-between p-3 rounded-xl cursor-pointer text-sm mb-1 transition-all duration-200 ${
+
+            isActive ? 'bg-brand-gold/10 text-brand-gold font-medium border border-brand-gold/20' : 'text-gray-400 hover:bg-white/5 hover:text-white border border-transparent'
+
+          }`;
+
+          item.onclick = () => {
+
+            State.activeSessionId = s.id;
+
+            this.renderSessionsList();
+
+            this.renderMessages();
+
+            if(window.innerWidth < 768) {
+
+              document.getElementById('sidebar').classList.add('-translate-x-full');
+
+              document.getElementById('sidebar-overlay').classList.add('hidden');
+
+            }
+
+          };
+            item.innerHTML = `
+
+            <div class="flex items-center gap-3 overflow-hidden">
+
+              <i class="fa-regular fa-message text-[10px] ${isActive ? 'text-brand-gold' : 'text-gray-500'}"></i>
+
+              <span class="truncate pr-2">${Utils.escapeHtml(s.title)}</span>
+
+            </div>
+
+            <button onclick="handleDeleteSession(event, '${s.id}')" class="opacity-0 group-hover:opacity-100 p-1.5 text-gray-500 hover:text-red-400 hover:bg-red-400/10 rounded-md transition-all cursor-pointer"><i class="fa-solid fa-trash-can text-xs"></i></button>
+
+          `;
+
+          listEl.appendChild(item);
+
+        });
+
+      },
+
+
+      renderMessages() {
+
+        const container = document.getElementById('messages-container');
+
+        const hero = document.getElementById('welcome-hero');
+
+        const session = State.sessions.find(s => s.id === State.activeSessionId);
+
+       
+
+        if (!session || !session.messages || session.messages.length === 0) {
+
+          hero.classList.remove('hidden');
+
+          Array.from(container.children).forEach(c => { if(c.id !== 'welcome-hero') c.remove(); });
+
+          return;
+
+        }
+
+        hero.classList.add('hidden');
+
+        Array.from(container.children).forEach(c => { if(c.id !== 'welcome-hero') c.remove(); });
+
+       
+
+        session.messages.forEach(msg => {
+
+          const msgEl = document.createElement('div');
+
+          msgEl.className = `flex w-full px-4 md:px-8 py-8 ${msg.role === 'user' ? 'bg-white' : 'bg-gray-50/50 border-y border-gray-100 shadow-[inset_0_1px_3px_rgba(0,0,0,0.01)]'}`;
+
+         
+
+          let avatar = msg.role === 'user' ?
+
+             `<div class="w-8 h-8 rounded-full bg-gradient-to-br from-gray-700 to-black text-white flex items-center justify-center shrink-0 mt-1 shadow-md"><i class="fa-solid fa-user text-[11px]"></i></div>` :
+
+             `<div class="w-8 h-8 rounded-full bg-gradient-to-br from-brand-gold to-brand-goldDark text-white flex items-center justify-center shrink-0 mt-1 shadow-md border border-brand-gold/50"><svg class="w-5 h-5" viewBox="0 0 100 100"><use href="#vsi-logo-symbol"></use></svg></div>`;
+
+         
+
+          let contentHtml = '';
+
+          const cIdStr = msg.isTemp ? 'id="msg_temp_content"' : '';
+
+
+          if (msg.role === 'user') {
+
+              contentHtml = Utils.escapeHtml(msg.text).replace(/\n/g, '<br>');
+
+          } else {
+
+              if (msg.text === '...loading...') {
+
+                  contentHtml = `<div class="flex items-center gap-1.5 h-6"><div class="w-2 h-2 bg-brand-gold rounded-full animate-bounce" style="animation-delay: 0ms"></div><div class="w-2 h-2 bg-brand-gold rounded-full animate-bounce" style="animation-delay: 150ms"></div><div class="w-2 h-2 bg-brand-gold rounded-full animate-bounce" style="animation-delay: 300ms"></div></div>`;
+
+              } else {
+
+                  contentHtml = FormatService.render(msg.text);
+
+              }
+
+          }
+
+         
+
+          let attachmentHtml = msg.attachment ? `<img src="${msg.attachment}" class="max-w-sm w-full rounded-2xl border border-gray-200 mt-2 mb-4 shadow-md object-contain max-h-[300px] bg-white">` : '';
+
+         
+
+          msgEl.innerHTML = `
+
+            <div class="max-w-4xl mx-auto flex gap-5 w-full animate-fade-in">
+
+              ${avatar}
+
+              <div class="flex-1 overflow-x-auto min-w-0 prose prose-sm md:prose-base max-w-none text-gray-800 leading-relaxed marker:text-brand-gold prose-a:text-brand-gold hover:prose-a:text-brand-goldDark">
+
+                ${attachmentHtml}
+
+                <div ${cIdStr}>${contentHtml}</div>
+
+              </div>
+
+            </div>
+
+          `;
+          container.appendChild(msgEl);
+
+        });
+
+       
+
+        requestAnimationFrame(() => container.scrollTo({ top: container.scrollHeight, behavior: 'smooth' }));
+
+      },
+
+
+      updateStreamingText: Utils.throttle((text) => {
+
+        const el = document.getElementById('msg_temp_content');
+
+        if (el) el.innerHTML = FormatService.render(text);
+
+        const container = document.getElementById('messages-container');
+
+        container.scrollTo({ top: container.scrollHeight });
+
+      }, 100),
+
+
+      async submitPrompt() {
+
+        const ta = document.getElementById('prompt-textarea');
+
+        let text = ta.value.trim();
+
+        let attachment = State.pendingAttachmentBase64;
+
+        if ((!text && !attachment) || State.isGenerating) return;
+
+       
+
+        State.isGenerating = true;
+
+        ta.value = '';
+
+        this.autoResizeTextarea(ta);
+
+        this.removeAttachment();
+
+       
+
+        const session = State.sessions.find(s => s.id === State.activeSessionId);
+
+        if (!session) { State.isGenerating = false; return; }
+
+
+        session.messages.push({ id: Utils.generateId(), role: 'user', text, attachment, timestamp: Date.now() });
+
+        if (session.messages.filter(m => m.role === 'user').length === 1 && text) {
+
+           session.title = text.substring(0, 25) + (text.length > 25 ? '...' : '');
+
+           this.renderSessionsList();
+
+        }
+
+       
+
+        const tempMsg = { id: 'msg_temp', role: 'model', text: '...loading...', timestamp: Date.now(), isTemp: true };
+
+        session.messages.push(tempMsg);
+
+        session.updatedAt = Date.now();
+
+        this.renderMessages();
+
+       
+
+        try {
+
+          const sys = MemoryManager.buildSystemInstruction();
+
+          const history = session.messages.filter(m => !m.isTemp);
+
+         
+
+          const lower = text.toLowerCase();
+
+          if (lower.includes("who created you") || lower.includes("who made you")) {
+
+              tempMsg.text = "Vivan Sahu Who is Currently CEO of VsiStudio (Vivan & Sachar International Studio)";
+
+          } else {
+
+              await GroqService.streamResponse(text, history.slice(0, -1), attachment, sys, (chunk) => {
+
+                tempMsg.text = chunk;
+
+                this.updateStreamingText(chunk);
+
+              });
+
+          }
+
+         
+
+          MemoryManager.evaluateInteraction(text);
+
+          if (State.wasDictated) { VoiceService.speak(tempMsg.text); State.wasDictated = false; }
+
+         
+
+        } catch(e) {
+
+          tempMsg.text = `**Error:** Failed to execute request. ${e.message}`;
+
+          NotificationService.show(e.message, 'error');
+
+        } finally {
+
+          delete tempMsg.isTemp;
+
+          tempMsg.id = Utils.generateId();
+
+          State.isGenerating = false;
+
+          SyncService.saveSession(session);
+
+          this.renderMessages();
+
+        }
+
+      },
+
+
+      handleFile(e) {
+
+        const file = e.target.files[0];
+
+        if (!file) return;
+
+        if (!file.type.startsWith('image/')) { NotificationService.show('Only image attachments supported.', 'error'); return; }
+
+       
+
+        const reader = new FileReader();
+
+        reader.onload = (ev) => {
+
+          State.pendingAttachmentBase64 = ev.target.result;
+
+          document.getElementById('attachment-img').src = State.pendingAttachmentBase64;
+
+          document.getElementById('attachment-name').textContent = file.name;
+
+          document.getElementById('attachment-preview-container').classList.remove('hidden');
+
+          this.autoResizeTextarea(document.getElementById('prompt-textarea'));
+
+        };
+
+        reader.readAsDataURL(file);
+
+        e.target.value = '';
+
+      },
