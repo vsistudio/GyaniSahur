@@ -15,8 +15,8 @@ app.use(cors());
 app.use(express.json({ limit: '15mb' }));
 
 // 🔑 REPLACE THESE WITH YOUR ACTUAL GROQ API KEYS
-const GROQ_PRIMARY_KEY = process.env.GROQ_PRIMARY_KEY || "PASTE_YOUR_PRIMARY_GROQ_API_KEY_HERE";
-const GROQ_SECONDARY_KEY = process.env.GROQ_SECONDARY_KEY || "PASTE_YOUR_SECONDARY_GROQ_API_KEY_HERE";
+const GROQ_PRIMARY_KEY = process.env.GROQ_PRIMARY_KEY || "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";
+const GROQ_SECONDARY_KEY = process.env.GROQ_SECONDARY_KEY || "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";
 
 // API Endpoint proxying calls to Groq AI
 app.post('/api/chat', async (req, res) => {
